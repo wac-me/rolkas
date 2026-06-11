@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import useEmblaCarousel from "embla-carousel-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Play } from "lucide-react";
 import { resolveMediaUrl } from "@/lib/reel-media";
@@ -34,9 +36,29 @@ export function ReelsGallery() {
     },
   });
 
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    dragFree: true,
+  });
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const rootNode = emblaApi.rootNode();
+    if (!rootNode) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      emblaApi.scrollBy(e.deltaY, false);
+    };
+
+    rootNode.addEventListener("wheel", onWheel, { passive: false });
+    return () => rootNode.removeEventListener("wheel", onWheel);
+  }, [emblaApi]);
+
   const items = data ?? [];
   if (items.length === 0) return null;
-  const loop = items.length < 4 ? [...items, ...items, ...items] : [...items, ...items];
 
   return (
     <section id="przyklady" className="border-b border-border/60 py-20 sm:py-28">
@@ -50,38 +72,41 @@ export function ReelsGallery() {
         </div>
       </div>
 
-      <div className="group/marquee mt-12 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
-        <div className="flex w-max gap-5 animate-marquee group-hover/marquee:[animation-play-state:paused]">
-          {loop.map((r, i) => {
-            const palette = palettes[i % palettes.length];
-            const isVideo = r.videoSrc && !/^https?:\/\/(www\.)?(tiktok|instagram|facebook|youtube|youtu)/i.test(r.videoSrc);
-            const href = r.videoSrc && /^https?:/i.test(r.videoSrc) ? r.videoSrc : undefined;
-            return (
-              <a
-                key={`${r.id}-${i}`}
-                href={href || "#"}
-                target={href ? "_blank" : undefined}
-                rel="noopener noreferrer"
-                className="group relative block aspect-[9/16] w-[220px] shrink-0 overflow-hidden rounded-xl border border-border bg-card sm:w-[260px]"
-              >
-                {isVideo ? (
-                  <video src={r.videoSrc!} poster={r.coverSrc ?? undefined} muted loop playsInline autoPlay className="absolute inset-0 h-full w-full object-cover" />
-                ) : r.coverSrc ? (
-                  <img src={r.coverSrc} alt={r.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                ) : (
-                  <div className={`absolute inset-0 bg-gradient-to-br ${palette}`} />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                <div className="absolute right-3 top-3 rounded-full bg-black/40 p-2 backdrop-blur">
-                  <Play className="h-3.5 w-3.5 fill-white text-white" />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 p-4">
-                  <div className="font-display text-lg font-bold leading-tight text-white">{r.title}</div>
-                  {r.tagline && <div className="mt-1 text-xs text-white/70">{r.tagline}</div>}
-                </div>
-              </a>
-            );
-          })}
+      <div className="mt-12 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+        <div ref={emblaRef} className="cursor-grab active:cursor-grabbing">
+          <div className="flex gap-5">
+            {items.map((r, i) => {
+              const palette = palettes[i % palettes.length];
+              const isVideo = r.videoSrc && !/^https?:\/\/(www\.)?(tiktok|instagram|facebook|youtube|youtu)/i.test(r.videoSrc);
+              const href = r.videoSrc && /^https?:/i.test(r.videoSrc) ? r.videoSrc : undefined;
+              return (
+                <a
+                  key={r.id}
+                  href={href || "#"}
+                  target={href ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="group relative block aspect-[9/16] w-[220px] shrink-0 select-none overflow-hidden rounded-xl border border-border bg-card sm:w-[260px]"
+                  draggable={false}
+                >
+                  {isVideo ? (
+                    <video src={r.videoSrc!} poster={r.coverSrc ?? undefined} muted loop playsInline autoPlay className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+                  ) : r.coverSrc ? (
+                    <img src={r.coverSrc} alt={r.title} draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br ${palette}`} />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  <div className="absolute right-3 top-3 rounded-full bg-black/40 p-2 backdrop-blur">
+                    <Play className="h-3.5 w-3.5 fill-white text-white" />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <div className="font-display text-lg font-bold leading-tight text-white">{r.title}</div>
+                    {r.tagline && <div className="mt-1 text-xs text-white/70">{r.tagline}</div>}
+                  </div>
+                </a>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
