@@ -40,10 +40,13 @@ export function ReelsGallery() {
   const [emblaRef] = useEmblaCarousel(
     {
       align: "start",
-      containScroll: "trimSnaps",
+      loop: true,
       dragFree: true,
     },
-    [WheelGesturesPlugin()],
+    [
+      WheelGesturesPlugin(),
+      AutoScroll({ speed: 0.8, startDelay: 0, stopOnInteraction: false, stopOnMouseEnter: true }),
+    ],
   );
 
   const items = data ?? [];
