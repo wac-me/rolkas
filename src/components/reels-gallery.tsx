@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import useEmblaCarousel from "embla-carousel-react";
 import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures";
+import AutoScroll from "embla-carousel-auto-scroll";
 import { supabase } from "@/integrations/supabase/client";
 import { Play } from "lucide-react";
 import { resolveMediaUrl } from "@/lib/reel-media";
@@ -39,10 +40,13 @@ export function ReelsGallery() {
   const [emblaRef] = useEmblaCarousel(
     {
       align: "start",
-      containScroll: "trimSnaps",
+      loop: true,
       dragFree: true,
     },
-    [WheelGesturesPlugin()],
+    [
+      WheelGesturesPlugin(),
+      AutoScroll({ speed: 0.8, startDelay: 0, stopOnInteraction: false, stopOnMouseEnter: true }),
+    ],
   );
 
   const items = data ?? [];
