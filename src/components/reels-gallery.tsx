@@ -1,6 +1,6 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import useEmblaCarousel from "embla-carousel-react";
+import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures";
 import { supabase } from "@/integrations/supabase/client";
 import { Play } from "lucide-react";
 import { resolveMediaUrl } from "@/lib/reel-media";
@@ -36,26 +36,14 @@ export function ReelsGallery() {
     },
   });
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "start",
-    containScroll: "trimSnaps",
-    dragFree: true,
-  });
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    const rootNode = emblaApi.rootNode();
-    if (!rootNode) return;
-
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      emblaApi.scrollBy(e.deltaY, false);
-    };
-
-    rootNode.addEventListener("wheel", onWheel, { passive: false });
-    return () => rootNode.removeEventListener("wheel", onWheel);
-  }, [emblaApi]);
+  const [emblaRef] = useEmblaCarousel(
+    {
+      align: "start",
+      containScroll: "trimSnaps",
+      dragFree: true,
+    },
+    [WheelGesturesPlugin()],
+  );
 
   const items = data ?? [];
   if (items.length === 0) return null;
