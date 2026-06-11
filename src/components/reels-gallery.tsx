@@ -1,15 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Play } from "lucide-react";
-
-const fallback = [
-  { id: "f1", title: "Hot drop", tagline: "Zobacz zanim zniknie", cover_url: "", link_url: null },
-  { id: "f2", title: "Smaki lata", tagline: "30 sekund, które smakują", cover_url: "", link_url: null },
-  { id: "f3", title: "Brand launch", tagline: "Wejście, którego nie zignorujesz", cover_url: "", link_url: null },
-  { id: "f4", title: "Behind the scenes", tagline: "Tak powstaje viral", cover_url: "", link_url: null },
-  { id: "f5", title: "Mini serial", tagline: "5 odsłon, 5M wyświetleń", cover_url: "", link_url: null },
-  { id: "f6", title: "User Generated", tagline: "Społeczność robi robotę", cover_url: "", link_url: null },
-];
+import { resolveMediaUrl } from "@/lib/reel-media";
 
 const palettes = [
   "from-[oklch(0.7_0.2_165)] to-[oklch(0.5_0.2_280)]",
@@ -27,15 +19,24 @@ export function ReelsGallery() {
       const { data, error } = await supabase
         .from("reels")
         .select("*")
+        .eq("is_visible", true)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      const resolved = await Promise.all(
+        (data ?? []).map(async (r) => ({
+          ...r,
+          coverSrc: await resolveMediaUrl("reel-covers", r.cover_url),
+          videoSrc: await resolveMediaUrl("reel-videos", r.link_url),
+        })),
+      );
+      return resolved;
     },
   });
 
-  const items = (data && data.length > 0 ? data : fallback) as typeof fallback;
-  const loop = [...items, ...items];
+  const items = data ?? [];
+  if (items.length === 0) return null;
+  const loop = items.length < 4 ? [...items, ...items, ...items] : [...items, ...items];
 
   return (
     <section id="przyklady" className="border-b border-border/60 py-20 sm:py-28">
@@ -53,16 +54,20 @@ export function ReelsGallery() {
         <div className="flex w-max gap-5 animate-marquee group-hover/marquee:[animation-play-state:paused]">
           {loop.map((r, i) => {
             const palette = palettes[i % palettes.length];
+            const isVideo = r.videoSrc && !/^https?:\/\/(www\.)?(tiktok|instagram|facebook|youtube|youtu)/i.test(r.videoSrc);
+            const href = r.videoSrc && /^https?:/i.test(r.videoSrc) ? r.videoSrc : undefined;
             return (
               <a
                 key={`${r.id}-${i}`}
-                href={r.link_url || "#"}
-                target={r.link_url ? "_blank" : undefined}
+                href={href || "#"}
+                target={href ? "_blank" : undefined}
                 rel="noopener noreferrer"
                 className="group relative block aspect-[9/16] w-[220px] shrink-0 overflow-hidden rounded-xl border border-border bg-card sm:w-[260px]"
               >
-                {r.cover_url ? (
-                  <img src={r.cover_url} alt={r.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                {isVideo ? (
+                  <video src={r.videoSrc!} poster={r.coverSrc ?? undefined} muted loop playsInline autoPlay className="absolute inset-0 h-full w-full object-cover" />
+                ) : r.coverSrc ? (
+                  <img src={r.coverSrc} alt={r.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br ${palette}`} />
                 )}
