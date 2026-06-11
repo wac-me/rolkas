@@ -40,31 +40,37 @@ export type Database = {
       }
       reels: {
         Row: {
-          cover_url: string
+          cover_url: string | null
           created_at: string
           id: string
+          is_visible: boolean
           link_url: string | null
           sort_order: number
           tagline: string | null
           title: string
+          updated_at: string
         }
         Insert: {
-          cover_url: string
+          cover_url?: string | null
           created_at?: string
           id?: string
+          is_visible?: boolean
           link_url?: string | null
           sort_order?: number
           tagline?: string | null
           title: string
+          updated_at?: string
         }
         Update: {
-          cover_url?: string
+          cover_url?: string | null
           created_at?: string
           id?: string
+          is_visible?: boolean
           link_url?: string | null
           sort_order?: number
           tagline?: string | null
           title?: string
+          updated_at?: string
         }
         Relationships: []
       }
